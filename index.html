@@ -70,6 +70,46 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
   .card{padding:14px 15px}
 }
 
+.modes{display:flex;gap:0;border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  background:var(--card);margin:14px 0 0}
+.modes button{flex:1;border:0;background:transparent;padding:10px;font-size:14px;
+  cursor:pointer;color:var(--muted);font-family:inherit}
+.modes button.on{background:var(--ink);color:var(--bg)}
+
+#practice{display:none}
+#practice.show{display:block}
+.pcard{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:22px 18px;margin-top:14px;text-align:center}
+.pbar{height:4px;background:var(--line);border-radius:2px;margin-top:14px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--accent);border-radius:2px;transition:width .25s}
+.pmeta{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-top:8px}
+.pq{font-size:12px;color:var(--muted);margin-bottom:4px}
+.pbig{font-size:32px;font-weight:600;margin:16px 0 20px;line-height:1.25;color:var(--ink)}
+.pbig.thai{font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif;font-size:30px}
+.pans{margin:14px 0 20px}
+.pans .rom{font-size:26px;font-weight:600;margin-bottom:7px}
+.pans .th{font-size:20px;font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif}
+.pans .tone{font-size:15px;color:var(--gold);margin-top:5px}
+.pans .note{font-size:12.5px;color:var(--green);background:#f1f7f3;border-radius:7px;
+  padding:8px 10px;margin-top:12px;text-align:left;line-height:1.5}
+.pbtn{width:100%;border:0;border-radius:10px;padding:14px;font-size:15px;cursor:pointer;
+  font-family:inherit;font-weight:500;background:var(--accent);color:#fff;margin-top:4px}
+.pbtn.ghost{background:var(--bg);color:var(--ink);border:1px solid var(--line);font-weight:400}
+.prow{display:flex;gap:9px;margin-top:4px}
+.prow button{flex:1;border:0;border-radius:10px;padding:14px 8px;font-size:14.5px;
+  cursor:pointer;font-family:inherit;font-weight:500}
+.pyes{background:#e8f3ec;color:#1f5c3f;border:1px solid #cfe3d7 !important}
+.pno{background:#fbeceb;color:#8c2f28;border:1px solid #eecfcc !important}
+.playbig{width:88px;height:88px;border-radius:50%;border:1px solid var(--line);
+  background:var(--bg);color:var(--accent);font-size:30px;cursor:pointer;margin:14px auto 20px;
+  display:flex;align-items:center;justify-content:center;padding:0}
+.playbig:active{background:var(--accent);color:#fff}
+.pstat{display:flex;gap:9px;margin-top:14px}
+.pstat div{flex:1;background:var(--bg);border-radius:9px;padding:11px 6px}
+.pstat b{display:block;font-size:21px;font-weight:600}
+.pstat span{font-size:11.5px;color:var(--muted)}
+.plead{font-size:13.5px;color:var(--muted);line-height:1.6}
+
 #top{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:19px;line-height:1;cursor:pointer;
@@ -151,6 +191,12 @@ table.tones tr.hl td{background:var(--accent-soft)}
   <span class="sub">中文 ↔ 泰语 · 拼音 / 泰文 / 声调</span>
 </header>
 
+<div class="modes">
+  <button id="mQ" class="on">速查</button>
+  <button id="mP">练习</button>
+</div>
+
+<div id="lookup">
 <div class="toolbar">
   <div class="searchbox">
     <input type="text" id="q" placeholder="输入中文或拼音… 例：好吃 / aroi / 多少钱" autocomplete="off">
@@ -189,6 +235,9 @@ table.tones tr.hl td{background:var(--accent-soft)}
 <div class="count" id="count"></div>
 <div id="results"></div>
 <div id="aislot"></div>
+</div>
+
+<div id="practice"></div>
 
 <div class="footer">
   <span id="mycount" class="grow"></span>
@@ -406,8 +455,11 @@ function delCustom(zh, t){
 const ALL = () => CUSTOM.concat(DICT);
 
 function exportCustom(){
-  if(!CUSTOM.length){ alert("还没有自建词条，没东西可导。"); return; }
-  const blob = new Blob([JSON.stringify(CUSTOM, null, 2)], {type:"application/json"});
+  const payload = {v:2, custom:CUSTOM, srs:(typeof SRS === "object" ? SRS : {})};
+  if(!CUSTOM.length && !Object.keys(payload.srs).length){
+    alert("还没有自建词条，也还没练过，暂时没东西可导。"); return;
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], {type:"application/json"});
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
   a.download = "thai-custom-" + new Date().toISOString().slice(0,10) + ".json";
@@ -417,12 +469,24 @@ function exportCustom(){
 function importCustom(file){
   const fr = new FileReader();
   fr.onload = () => {
-    let arr;
-    try{ arr = JSON.parse(fr.result); }catch(e){ alert("文件读不了，不是有效的 JSON。"); return; }
-    if(!Array.isArray(arr)){ alert("格式不对，应该是一个数组。"); return; }
+    let data;
+    try{ data = JSON.parse(fr.result); }catch(e){ alert("文件读不了，不是有效的 JSON。"); return; }
+    // v1 是纯数组，v2 是 {custom, srs}，两种都收
+    const arr = Array.isArray(data) ? data : (data.custom || []);
+    const srs = Array.isArray(data) ? null : data.srs;
+    if(!Array.isArray(arr)){ alert("格式不对，认不出这个备份。"); return; }
     let added = 0;
     arr.forEach(e => { if(addCustom(e)) added++; });
-    alert(`导入完成：新增 ${added} 条，跳过 ${arr.length - added} 条重复的。`);
+    let merged = 0;
+    if(srs && typeof srs === "object"){
+      Object.keys(srs).forEach(k => {
+        const a = SRS[k], b = srs[k];
+        if(!a || (b.lvl || 0) > (a.lvl || 0)){ SRS[k] = b; merged++; }
+      });
+      saveSRS();
+    }
+    alert(`导入完成：新增词条 ${added} 条，跳过重复 ${arr.length - added} 条` +
+          (merged ? `，合并练习记录 ${merged} 条。` : "。"));
     render();
   };
   fr.readAsText(file);
@@ -722,6 +786,146 @@ document.getElementById("nI").onclick = () => {
   pinyinMode = false; nI.classList.add("on"); nP.classList.remove("on"); render(); };
 
 render();
+
+/* ================= 练习模式 =================
+   每个词存熟练度 0-5：说对 +1，说错清零。
+   抽题权重 = 6 - 熟练度，所以不会的反复出现，会了的慢慢淡出。   */
+const SRS_KEY = "thai_srs_v1";
+const ROUND_N = 10;
+let SRS = {}, round = [], rIdx = 0, rRight = 0, revealed = false;
+
+function loadSRS(){ try{ SRS = JSON.parse(localStorage.getItem(SRS_KEY) || "{}"); }catch(e){ SRS = {}; } }
+function saveSRS(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
+const kOf = e => e.zh + "|" + e.t;
+const lvlOf = e => (SRS[kOf(e)] && SRS[kOf(e)].lvl) || 0;
+
+function grade(e, ok){
+  const k = kOf(e), r = SRS[k] || {lvl:0, seen:0};
+  r.seen++; r.lvl = ok ? Math.min(5, r.lvl + 1) : 0;
+  SRS[k] = r; saveSRS();
+}
+
+function pickRound(n){
+  const pool = ALL().slice();
+  const w = pool.map(e => Math.max(1, 6 - lvlOf(e)));
+  const out = [];
+  while(out.length < n && pool.length){
+    let total = w.reduce((a,b) => a + b, 0), r = Math.random() * total, i = 0;
+    while(i < w.length - 1 && r > w[i]){ r -= w[i]; i++; }
+    out.push(pool[i]); pool.splice(i,1); w.splice(i,1);
+  }
+  return out;
+}
+
+const pEl = () => document.getElementById("practice");
+
+function pStart(){
+  const all = ALL(), done = all.filter(e => lvlOf(e) >= 4).length;
+  const seen = all.filter(e => SRS[kOf(e)]).length;
+  pEl().innerHTML = `<div class="pcard">
+    <div class="pbig" style="font-size:24px;margin:4px 0 14px">练习</div>
+    <div class="plead">出中文或放发音，你先自己说出来，再翻答案。<br>说错的会更频繁地回来。</div>
+    <div class="pstat">
+      <div><b>${all.length}</b><span>词库总数</span></div>
+      <div><b>${seen}</b><span>练过</span></div>
+      <div><b>${done}</b><span>已熟</span></div>
+    </div>
+    <button class="pbtn" id="pgo" style="margin-top:16px">开始一轮 · ${ROUND_N} 题</button>
+    ${seen ? `<button class="pbtn ghost" id="preset" style="margin-top:8px">清空练习记录</button>` : ""}
+  </div>`;
+  document.getElementById("pgo").onclick = () => {
+    round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
+  };
+  const rb = document.getElementById("preset");
+  if(rb) rb.onclick = () => {
+    if(confirm("清空所有熟练度记录？词库本身不受影响。")){ SRS = {}; saveSRS(); pStart(); }
+  };
+}
+
+function pQuestion(){
+  if(rIdx >= round.length) return pDone();
+  const e = round[rIdx];
+  revealed = false;
+  // 有泰语语音时，三分之一的题出成听力题
+  const listen = !!thaiVoice && Math.random() < 0.34;
+  const pct = Math.round(rIdx / round.length * 100);
+  const head = `<div class="pbar"><i style="width:${pct}%"></i></div>
+    <div class="pmeta"><span>${rIdx + 1} / ${round.length}</span><span>答对 ${rRight}</span></div>`;
+
+  pEl().innerHTML = head + `<div class="pcard">
+    <div class="pq">${listen ? "听发音，这是什么意思？" : "这句泰语怎么说？"}</div>
+    ${listen
+      ? `<button class="playbig" id="pplay" aria-label="再听一次">▶</button>
+         <div class="plead" style="margin-top:-8px">点圆圈可以再听</div>`
+      : `<div class="pbig">${esc(e.zh)}</div>`}
+    <button class="pbtn" id="pshow" style="margin-top:16px">看答案</button>
+  </div>`;
+
+  if(listen){
+    const play = () => speak(fill(e.t));
+    document.getElementById("pplay").onclick = play;
+    setTimeout(play, 350);
+  }
+  document.getElementById("pshow").onclick = () => pReveal(e, listen);
+}
+
+function pReveal(e, listen){
+  if(revealed) return;
+  revealed = true;
+  const pct = Math.round(rIdx / round.length * 100);
+  pEl().innerHTML = `<div class="pbar"><i style="width:${pct}%"></i></div>
+    <div class="pmeta"><span>${rIdx + 1} / ${round.length}</span><span>答对 ${rRight}</span></div>
+    <div class="pcard">
+      <div class="pq">${esc(e.zh)}</div>
+      <div class="pans">
+        <div class="rom">${esc(fill(e.r,"rom"))}</div>
+        <div class="th">${esc(fill(e.t))}</div>
+        <div class="tone">${esc(toneText(fill(e.p,"tone")))}</div>
+        ${e.n ? `<div class="note">${esc(e.n)}</div>` : ""}
+      </div>
+      <button class="pbtn ghost" id="pagain" style="margin-bottom:10px">▶ 再听一次</button>
+      <div class="pq" style="margin-bottom:6px">刚才说出来了吗？</div>
+      <div class="prow">
+        <button class="pno"  id="pbad">没想起来</button>
+        <button class="pyes" id="pok">想起来了</button>
+      </div>
+    </div>`;
+  document.getElementById("pagain").onclick = () => speak(fill(e.t));
+  if(!listen) setTimeout(() => speak(fill(e.t)), 200);
+  const next = ok => {
+    grade(e, ok); if(ok) rRight++;
+    rIdx++; pQuestion();
+  };
+  document.getElementById("pok").onclick  = () => next(true);
+  document.getElementById("pbad").onclick = () => next(false);
+}
+
+function pDone(){
+  const pct = Math.round(rRight / round.length * 100);
+  const msg = pct >= 80 ? "这轮很稳。" : pct >= 50 ? "一半以上记住了，继续。" : "生词偏多，它们会尽快再来。";
+  pEl().innerHTML = `<div class="pcard">
+    <div class="pbig" style="margin:6px 0 4px">${rRight} / ${round.length}</div>
+    <div class="plead">${msg}</div>
+    <button class="pbtn" id="pmore" style="margin-top:18px">再来一轮</button>
+    <button class="pbtn ghost" id="pback" style="margin-top:8px">回速查</button>
+  </div>`;
+  document.getElementById("pmore").onclick = () => {
+    round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
+  };
+  document.getElementById("pback").onclick = () => setMode(false);
+}
+
+function setMode(practice){
+  document.getElementById("lookup").style.display  = practice ? "none" : "";
+  document.getElementById("practice").className    = practice ? "show" : "";
+  document.getElementById("mP").classList.toggle("on", practice);
+  document.getElementById("mQ").classList.toggle("on", !practice);
+  if(practice) pStart();
+  window.scrollTo(0,0);
+}
+loadSRS();
+document.getElementById("mQ").onclick = () => setMode(false);
+document.getElementById("mP").onclick = () => setMode(true);
 
 // 回到顶部：滑下去一屏才出现，兼容 window / 容器两种滚动
 (function(){
