@@ -1,6 +1,6 @@
 /* 泰语口语速查 — 离线缓存
    装到主屏后没网也能开。改了 index.html 就把 CACHE 版本号 +1，旧缓存会自动清掉。 */
-const CACHE = "thai-trainer-v12";
+const CACHE = "thai-trainer-v13";
 const SHELL = ["./", "./index.html"];
 
 self.addEventListener("install", e => {

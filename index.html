@@ -181,6 +181,13 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 .heard{font-size:15px;color:var(--muted);margin-top:10px;min-height:20px;text-align:center;
   font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif}
 .tzh{font-size:30px;font-weight:600;line-height:1.35;margin:12px 0 8px;color:var(--ink)}
+.steps{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px;margin-top:14px}
+.steps b{font-size:14px}
+.steps ol{margin:9px 0 0;padding-left:20px;font-size:13.5px;color:var(--muted);line-height:1.85}
+.steps ol b{color:var(--accent);font-size:15px}
+.altlink{background:none;border:0;color:var(--muted);font-size:12.5px;text-decoration:underline;
+  cursor:pointer;padding:10px 0 0;font-family:inherit;display:block;width:100%;text-align:center}
 .tth-small{font-size:17px;font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif;
   color:var(--ink)}
 
@@ -281,13 +288,31 @@ table.tones tr.hl td{background:var(--accent-soft)}
     <button id="tgo">翻译</button>
   </div>
   <div id="paneTZ" style="display:none">
-    <button class="mic" id="mic">
-      <span class="dot" id="micdot">●</span>
-      <span class="lbl" id="miclbl">点一下，让对方对着手机说泰语</span>
-    </button>
-    <div class="heard" id="heard"></div>
-    <textarea id="tinTh" rows="2" placeholder="或者直接粘贴泰文…" style="margin-top:4px"></textarea>
+    <div id="micBlock">
+      <button class="mic" id="mic">
+        <span class="dot" id="micdot">●</span>
+        <span class="lbl" id="miclbl">点一下，让对方对着手机说泰语</span>
+      </button>
+      <div class="heard" id="heard"></div>
+    </div>
+    <div id="dictBlock" style="display:none">
+      <div class="steps">
+        <b>让对方说泰语 · 用键盘听写</b>
+        <ol>
+          <li>点下面的输入框，键盘弹出来</li>
+          <li>按键盘上的 <b>🎤</b>，把语言切到 <b>ไทย</b></li>
+          <li>让对方对着手机说，说完收起键盘</li>
+          <li>点「翻成中文」</li>
+        </ol>
+      </div>
+    </div>
+    <textarea id="tinTh" rows="2" placeholder="泰文出现在这里…"></textarea>
+    <div class="trow" style="margin-top:9px">
+      <button id="tpaste">粘贴</button>
+      <button id="tclr">清空</button>
+    </div>
     <button id="tgoTh">翻成中文</button>
+    <div id="micAlt"></div>
   </div>
   <div id="tout"></div>
 </div>
@@ -1429,36 +1454,23 @@ function setRecUI(on, label){
 
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
-                     window.navigator.standalone === true;
-
-// 键盘听写兜底：系统输入法的麦克风按钮走的是另一条路，网页语音不通时它多半还能用
-const DICTATE_TIP = `<div class="twarn" style="margin-top:10px">
-  <b>还有一条路，多半能用：</b><br>
-  点下面的泰文输入框 → 用手机键盘上的 🎤 按钮（系统听写）→ 把键盘切到泰语 →
-  让对方对着说 → 出来的泰文点「翻成中文」。<br>
-  系统听写和网页语音是两套东西，这条路不受上面那个错误影响。
-  ${isIOS ? "（键盘上看不到泰语的话：设置 → 通用 → 键盘 → 添加新键盘 → ไทย）" : ""}
-</div>`;
 
 function errHTML(err){
   let msg;
   if(err === "service-not-allowed"){
     msg = isIOS
-      ? `<b>系统听写服务没开。</b><br>
-         打开 <b>设置 → 通用 → 键盘 → 启用听写</b>，打开后回来重试。<br>
-         iPhone 上网页语音识别是借系统听写实现的，这项关掉就会报这个错。
-         ${isStandalone ? "<br><br>另外你现在是从主屏图标打开的，iOS 在这种模式下语音识别经常不工作——试试改用 Safari 直接打开网址。" : ""}`
+      ? `<b>iPhone 的网页语音识别用不了。</b><br>
+         这是 iOS Safari 本身的限制，很多设备上就是不工作，不是设置问题。
+         已经帮你切到系统键盘听写，那条路是原生的，稳定得多。`
       : `<b>浏览器拒绝提供语音识别服务。</b><br>
-         常见原因：用的是 Firefox 或隐私模式，或系统语音服务被关闭。
-         换 Chrome / Edge 的普通窗口试试。`;
+         常见原因：Firefox、隐私模式，或系统语音服务被关闭。换 Chrome / Edge 普通窗口试试。`;
   }
   else if(err === "not-allowed") msg = "<b>麦克风权限被拒绝了。</b><br>点地址栏左边的图标，把麦克风改成「允许」，然后刷新页面。";
   else if(err === "no-speech")   msg = "没听到声音。音量调大一点、靠近麦克风再试。";
   else if(err === "network")     msg = "语音识别需要联网，现在连不上。";
   else if(err === "audio-capture") msg = "找不到麦克风，检查一下设备和系统权限。";
   else msg = "识别出错：" + esc(err);
-  return `<div class="tres"><div class="twarn">${msg}</div>${DICTATE_TIP}</div>`;
+  return `<div class="tres"><div class="twarn">${msg}</div></div>`;
 }
 
 // 正常收尾：stop 会保留已识别的内容并触发 onend；abort 会直接丢弃
@@ -1472,8 +1484,8 @@ function startRec(){
   if(!SR){
     document.getElementById("tout").innerHTML = `<div class="tres">
       <div class="twarn"><b>这个浏览器不支持网页语音识别。</b><br>
-        Chrome、Edge 和较新的 iOS Safari 可以，Firefox 不行。</div>${DICTATE_TIP}</div>`;
-    document.getElementById("tinTh").focus({preventScroll:true});
+        已切到系统键盘听写，照下面的步骤走即可。</div></div>`;
+    useDictationFirst(true);
     return;
   }
   if(recording){ finishRec(); return; }   // 再点一下 = 停止
@@ -1501,8 +1513,9 @@ function startRec(){
     killRec();
     if(err === "aborted") return;
     document.getElementById("tout").innerHTML = errHTML(err);
-    if(err === "service-not-allowed" || err === "not-allowed"){
-      document.getElementById("tinTh").focus({preventScroll:true});
+    // 网页识别用不了就直接切到键盘听写，不让用户卡在报错上
+    if(err === "service-not-allowed" || err === "not-allowed" || err === "audio-capture"){
+      useDictationFirst(true);
     }
   };
   rec.onend = () => {
@@ -1803,6 +1816,31 @@ document.getElementById("d2z").onclick = () => setDir(false);
 document.getElementById("mic").onclick = startRec;
 document.getElementById("tgoTh").onclick = () =>
   translateTh(document.getElementById("tinTh").value.trim());
+document.getElementById("tclr").onclick = () => {
+  document.getElementById("tinTh").value = "";
+  document.getElementById("tout").innerHTML = "";
+};
+document.getElementById("tpaste").onclick = async () => {
+  try{
+    const t = await navigator.clipboard.readText();
+    if(t){ document.getElementById("tinTh").value = t.trim(); translateTh(t.trim()); }
+  }catch(e){
+    document.getElementById("tinTh").focus();
+  }
+};
+
+/* iPhone 上网页语音识别经常直接失败，所以默认走系统键盘听写，
+   网页识别降级成一个可选入口。其他平台维持原样。 */
+function useDictationFirst(on){
+  document.getElementById("micBlock").style.display  = on ? "none" : "";
+  document.getElementById("dictBlock").style.display = on ? "" : "none";
+  document.getElementById("micAlt").innerHTML = on
+    ? `<button class="altlink" id="trymic">还是想试试网页语音识别</button>`
+    : "";
+  const b = document.getElementById("trymic");
+  if(b) b.onclick = () => { useDictationFirst(false); startRec(); };
+}
+if(isIOS) useDictationFirst(true);
 document.getElementById("tinTh").addEventListener("keydown", ev => {
   if(ev.key === "Enter" && !ev.shiftKey){
     ev.preventDefault(); translateTh(ev.target.value.trim());
