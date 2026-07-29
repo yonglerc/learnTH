@@ -110,6 +110,28 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 .pstat span{font-size:11.5px;color:var(--muted)}
 .plead{font-size:13.5px;color:var(--muted);line-height:1.6}
 
+.opts{display:flex;flex-direction:column;gap:9px;margin-top:18px}
+.opt2{border:1px solid var(--line);background:var(--card);border-radius:11px;
+  padding:13px 14px;font-size:16px;cursor:pointer;text-align:left;font-family:inherit;
+  color:var(--ink);line-height:1.35;width:100%}
+.opt2 small{display:block;font-size:13px;color:var(--muted);margin-top:3px;
+  font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif}
+.opt2:active{border-color:var(--accent)}
+.opt2.right{background:#e8f3ec;border-color:#8fc4a8;color:#1f5c3f}
+.opt2.right small{color:#3d7a5c}
+.opt2.wrong{background:#fbeceb;border-color:#e0a9a3;color:#8c2f28}
+.opt2.wrong small{color:#a55349}
+.opt2.dim{opacity:.45}
+.opt2[disabled]{cursor:default}
+.verdict{font-size:14px;font-weight:500;margin-top:16px}
+.verdict.ok{color:var(--green)}
+.verdict.no{color:#8c2f28}
+.qmode{display:flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;
+  background:var(--card);margin-top:14px}
+.qmode button{flex:1;border:0;background:transparent;padding:9px;font-size:12.5px;
+  cursor:pointer;color:var(--muted);font-family:inherit}
+.qmode button.on{background:var(--ink);color:var(--bg)}
+
 #top{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:19px;line-height:1;cursor:pointer;
@@ -958,6 +980,8 @@ render();
 const SRS_KEY = "thai_srs_v1";
 const ROUND_N = 10;
 let SRS = {}, round = [], rIdx = 0, rRight = 0, revealed = false;
+let quizMode = localStorage.getItem("thai_qmode") || "choice";
+const saveQM = () => { try{ localStorage.setItem("thai_qmode", quizMode); }catch(e){} };
 
 function loadSRS(){ try{ SRS = JSON.parse(localStorage.getItem(SRS_KEY) || "{}"); }catch(e){ SRS = {}; } }
 function saveSRS(){ try{ localStorage.setItem(SRS_KEY, JSON.stringify(SRS)); }catch(e){} }
@@ -989,7 +1013,13 @@ function pStart(){
   const seen = all.filter(e => SRS[kOf(e)]).length;
   pEl().innerHTML = `<div class="pcard">
     <div class="pbig" style="font-size:24px;margin:4px 0 14px">练习</div>
-    <div class="plead">出中文或放发音，你先自己说出来，再翻答案。<br>说错的会更频繁地回来。</div>
+    <div class="plead">${quizMode === "choice"
+      ? "看题选答案，四选一。答错的会更频繁地回来。"
+      : "先自己出声说，再翻答案自评。比选择题难，但练的是开口。"}</div>
+    <div class="qmode">
+      <button id="qmC" class="${quizMode === "choice" ? "on" : ""}">选择题</button>
+      <button id="qmR" class="${quizMode === "recall" ? "on" : ""}">回想题</button>
+    </div>
     <div class="pstat">
       <div><b>${all.length}</b><span>词库总数</span></div>
       <div><b>${seen}</b><span>练过</span></div>
@@ -998,6 +1028,8 @@ function pStart(){
     <button class="pbtn" id="pgo" style="margin-top:16px">开始一轮 · ${ROUND_N} 题</button>
     ${seen ? `<button class="pbtn ghost" id="preset" style="margin-top:8px">清空练习记录</button>` : ""}
   </div>`;
+  document.getElementById("qmC").onclick = () => { quizMode = "choice"; saveQM(); pStart(); };
+  document.getElementById("qmR").onclick = () => { quizMode = "recall"; saveQM(); pStart(); };
   document.getElementById("pgo").onclick = () => {
     round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
   };
@@ -1007,47 +1039,96 @@ function pStart(){
   };
 }
 
+// 干扰项优先从同一分类里挑，不然一眼就能排除，练不到东西
+function distractors(e, n){
+  const all = ALL();
+  const same = all.filter(x => x.c === e.c && x.t !== e.t && x.zh !== e.zh);
+  const rest = all.filter(x => x.c !== e.c && x.t !== e.t && x.zh !== e.zh);
+  const pool = (same.length >= n ? same : same.concat(rest)).slice();
+  const out = [], used = {};
+  while(out.length < n && pool.length){
+    const i = Math.floor(Math.random() * pool.length), c = pool[i];
+    pool.splice(i, 1);
+    if(!used[c.t] && !used[c.zh]){ used[c.t] = used[c.zh] = 1; out.push(c); }
+  }
+  return out;
+}
+const shuffle = a => a.map(x => [Math.random(), x]).sort((p,q) => p[0]-q[0]).map(p => p[1]);
+
+function pHead(){
+  const pct = Math.round(rIdx / round.length * 100);
+  return `<div class="pbar"><i style="width:${pct}%"></i></div>
+    <div class="pmeta"><span>${rIdx + 1} / ${round.length}</span><span>答对 ${rRight}</span></div>`;
+}
+
 function pQuestion(){
   if(rIdx >= round.length) return pDone();
   const e = round[rIdx];
   revealed = false;
   // 有泰语语音时，三分之一的题出成听力题
   const listen = !!thaiVoice && Math.random() < 0.34;
-  const pct = Math.round(rIdx / round.length * 100);
-  const head = `<div class="pbar"><i style="width:${pct}%"></i></div>
-    <div class="pmeta"><span>${rIdx + 1} / ${round.length}</span><span>答对 ${rRight}</span></div>`;
+  const ask = listen
+    ? `<button class="playbig" id="pplay" aria-label="再听一次">▶</button>
+       <div class="plead" style="margin-top:-8px">点圆圈可以再听</div>`
+    : `<div class="pbig">${esc(e.zh)}</div>`;
+  const tip = listen ? "听发音，这是什么意思？" : "这句泰语怎么说？";
 
-  pEl().innerHTML = head + `<div class="pcard">
-    <div class="pq">${listen ? "听发音，这是什么意思？" : "这句泰语怎么说？"}</div>
-    ${listen
-      ? `<button class="playbig" id="pplay" aria-label="再听一次">▶</button>
-         <div class="plead" style="margin-top:-8px">点圆圈可以再听</div>`
-      : `<div class="pbig">${esc(e.zh)}</div>`}
-    <button class="pbtn" id="pshow" style="margin-top:16px">看答案</button>
-  </div>`;
+  if(quizMode === "recall"){
+    pEl().innerHTML = pHead() + `<div class="pcard">
+      <div class="pq">${tip}</div>${ask}
+      <button class="pbtn" id="pshow" style="margin-top:16px">看答案</button>
+    </div>`;
+    document.getElementById("pshow").onclick = () => pReveal(e, listen, null);
+  } else {
+    const opts = shuffle([e].concat(distractors(e, 3)));
+    const label = x => listen
+      ? esc(x.zh)
+      : `${esc(fill(x.r,"rom"))}<small>${esc(fill(x.t))}</small>`;
+    pEl().innerHTML = pHead() + `<div class="pcard">
+      <div class="pq">${tip}</div>${ask}
+      <div class="opts">${opts.map((x,i) =>
+        `<button class="opt2" data-i="${i}">${label(x)}</button>`).join("")}</div>
+    </div>`;
+    const btns = [].slice.call(document.querySelectorAll(".opt2"));
+    btns.forEach((b, i) => b.onclick = () => {
+      if(revealed) return;
+      revealed = true;
+      const ok = opts[i].t === e.t;
+      btns.forEach((bb, j) => {
+        bb.disabled = true;
+        if(opts[j].t === e.t) bb.classList.add("right");
+        else if(j === i) bb.classList.add("wrong");
+        else bb.classList.add("dim");
+      });
+      pReveal(e, listen, ok);
+    });
+  }
 
   if(listen){
     const play = () => speak(fill(e.t));
     document.getElementById("pplay").onclick = play;
     setTimeout(play, 350);
   }
-  document.getElementById("pshow").onclick = () => pReveal(e, listen);
 }
 
-function pReveal(e, listen){
-  if(revealed) return;
-  revealed = true;
-  const pct = Math.round(rIdx / round.length * 100);
-  pEl().innerHTML = `<div class="pbar"><i style="width:${pct}%"></i></div>
-    <div class="pmeta"><span>${rIdx + 1} / ${round.length}</span><span>答对 ${rRight}</span></div>
-    <div class="pcard">
+function ansHTML(e){
+  return `<div class="pans">
+    <div class="rom">${esc(fill(e.r,"rom"))}</div>
+    <div class="th">${esc(fill(e.t))}</div>
+    <div class="tone">${esc(toneText(fill(e.p,"tone")))}</div>
+    ${e.n ? `<div class="note">${esc(e.n)}</div>` : ""}
+  </div>`;
+}
+
+function pReveal(e, listen, ok){
+  const next = correct => { grade(e, correct); if(correct) rRight++; rIdx++; pQuestion(); };
+
+  if(ok === null){
+    // 回想模式：自己判对错
+    revealed = true;
+    pEl().innerHTML = pHead() + `<div class="pcard">
       <div class="pq">${esc(e.zh)}</div>
-      <div class="pans">
-        <div class="rom">${esc(fill(e.r,"rom"))}</div>
-        <div class="th">${esc(fill(e.t))}</div>
-        <div class="tone">${esc(toneText(fill(e.p,"tone")))}</div>
-        ${e.n ? `<div class="note">${esc(e.n)}</div>` : ""}
-      </div>
+      ${ansHTML(e)}
       <button class="pbtn ghost" id="pagain" style="margin-bottom:10px">▶ 再听一次</button>
       <div class="pq" style="margin-bottom:6px">刚才说出来了吗？</div>
       <div class="prow">
@@ -1055,14 +1136,23 @@ function pReveal(e, listen){
         <button class="pyes" id="pok">想起来了</button>
       </div>
     </div>`;
-  document.getElementById("pagain").onclick = () => speak(fill(e.t));
+    document.getElementById("pagain").onclick = () => speak(fill(e.t));
+    document.getElementById("pok").onclick  = () => next(true);
+    document.getElementById("pbad").onclick = () => next(false);
+  } else {
+    // 选择题：已自动判分，在选项下面补上完整答案
+    const card = pEl().querySelector(".pcard");
+    const box = document.createElement("div");
+    box.innerHTML = `<div class="verdict ${ok ? "ok" : "no"}">${ok ? "答对了" : "答错了，正确答案："}</div>
+      ${ansHTML(e)}
+      <button class="pbtn ghost" id="pagain" style="margin-bottom:10px">▶ 再听一次</button>
+      <button class="pbtn" id="pnext">下一题</button>`;
+    card.appendChild(box);
+    document.getElementById("pagain").onclick = () => speak(fill(e.t));
+    document.getElementById("pnext").onclick = () => next(ok);
+    document.getElementById("pnext").scrollIntoView({block:"nearest", behavior:"smooth"});
+  }
   if(!listen) setTimeout(() => speak(fill(e.t)), 200);
-  const next = ok => {
-    grade(e, ok); if(ok) rRight++;
-    rIdx++; pQuestion();
-  };
-  document.getElementById("pok").onclick  = () => next(true);
-  document.getElementById("pbad").onclick = () => next(false);
 }
 
 function pDone(){
