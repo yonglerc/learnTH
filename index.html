@@ -191,6 +191,10 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 .tth-small{font-size:17px;font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif;
   color:var(--ink)}
 
+#fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:80;display:none}
+.pcard .pbig.pop{animation:pop .5s cubic-bezier(.2,1.4,.4,1) both}
+@keyframes pop{0%{transform:scale(.6);opacity:0}100%{transform:scale(1);opacity:1}}
+
 #top{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:19px;line-height:1;cursor:pointer;
@@ -378,6 +382,7 @@ table.tones tr.hl td{background:var(--accent-soft)}
 
 </div>
 <button id="top" type="button" title="回到顶部" aria-label="回到顶部">↑</button>
+<canvas id="fx" aria-hidden="true"></canvas>
 <script>
 const DICT = [
 // ——— 打招呼 ———
@@ -1777,23 +1782,94 @@ function pReveal(e, listen, ok){
   if(!listen) setTimeout(() => speak(fill(e.t)), 200);
 }
 
+/* ---------- 烟花 ---------- */
+let fxRAF = null, fxTimer = null;
+function stopFx(){
+  cancelAnimationFrame(fxRAF); clearInterval(fxTimer);
+  fxRAF = fxTimer = null;
+  const cv = document.getElementById("fx");
+  if(cv){ cv.style.display = "none"; const c = cv.getContext("2d");
+          c && c.clearRect(0,0,cv.width,cv.height); }
+}
+function fireworks(bursts){
+  if(window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  stopFx();
+  const cv = document.getElementById("fx"), ctx = cv.getContext("2d");
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+  const W = () => window.innerWidth, H = () => window.innerHeight;
+  cv.width = W() * dpr; cv.height = H() * dpr;
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  cv.style.display = "block";
+
+  const COLORS = ["#c8461f","#b8892b","#2f6b4f","#d4537e","#378add","#ef9f27","#7f77dd"];
+  const parts = [];
+  function burst(x, y){
+    const n = 36 + (Math.random() * 20 | 0);
+    const col = COLORS[Math.random() * COLORS.length | 0];
+    for(let i = 0; i < n; i++){
+      const a = Math.PI * 2 * i / n + Math.random() * 0.25;
+      const sp = 2.0 + Math.random() * 3.6;
+      parts.push({x, y, vx:Math.cos(a)*sp, vy:Math.sin(a)*sp,
+                  life:1, c:col, r:1.4 + Math.random()*1.8});
+    }
+  }
+  let fired = 0;
+  const fireOne = () => {
+    if(fired++ >= bursts){ clearInterval(fxTimer); fxTimer = null; return; }
+    burst(W() * (0.15 + Math.random()*0.7), H() * (0.14 + Math.random()*0.34));
+  };
+  fireOne();
+  fxTimer = setInterval(fireOne, 280);
+
+  let last = performance.now();
+  (function loop(now){
+    const dt = Math.min((now - last) / 16.7, 2.5); last = now;
+    ctx.clearRect(0, 0, W(), H());
+    for(let i = parts.length - 1; i >= 0; i--){
+      const p = parts[i];
+      p.x += p.vx * dt; p.y += p.vy * dt;
+      p.vy += 0.055 * dt;                 // 重力
+      p.vx *= Math.pow(0.985, dt);        // 空气阻力
+      p.vy *= Math.pow(0.985, dt);
+      p.life -= 0.011 * dt;
+      if(p.life <= 0){ parts.splice(i, 1); continue; }
+      ctx.globalAlpha = Math.max(0, p.life);
+      ctx.fillStyle = p.c;
+      ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.284); ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+    if(parts.length || fxTimer) fxRAF = requestAnimationFrame(loop);
+    else stopFx();
+  })(last);
+}
+
 function pDone(){
   const pct = Math.round(rRight / round.length * 100);
-  const msg = pct >= 80 ? "这轮很稳。" : pct >= 50 ? "一半以上记住了，继续。" : "生词偏多，它们会尽快再来。";
+  const full = rRight === round.length;
+  const msg = full ? "全对。这轮一个都没漏。"
+            : pct >= 80 ? "这轮很稳。"
+            : pct >= 50 ? "一半以上记住了，继续。"
+            : "再接再厉。";
   pEl().innerHTML = `<div class="pcard">
-    <div class="pbig" style="margin:6px 0 4px">${rRight} / ${round.length}</div>
+    <div class="pbig${pct >= 50 ? " pop" : ""}" style="margin:6px 0 4px">${rRight} / ${round.length}</div>
     <div class="plead">${msg}</div>
     <button class="pbtn" id="pmore" style="margin-top:18px">再来一轮</button>
     <button class="pbtn ghost" id="pback" style="margin-top:8px">回速查</button>
   </div>`;
+  // 烟花按成绩给：全对最热闹，一半以下不放（答错一半还放烟花有点讽刺）
+  if(full)          fireworks(7);
+  else if(pct >= 80) fireworks(4);
+  else if(pct >= 50) fireworks(2);
+
   document.getElementById("pmore").onclick = () => {
-    round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
+    stopFx(); round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
   };
-  document.getElementById("pback").onclick = () => setMode("lookup");
+  document.getElementById("pback").onclick = () => { stopFx(); setMode("lookup"); };
 }
 
 function setMode(m){
   if(m !== "trans") killRec();
+  if(m !== "practice") stopFx();
   document.getElementById("lookup").style.display = (m === "lookup") ? "" : "none";
   document.getElementById("trans").className      = (m === "trans")    ? "show" : "";
   document.getElementById("practice").className   = (m === "practice") ? "show" : "";
