@@ -134,13 +134,16 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
 
 #trans{display:none}
 #trans.show{display:block}
-#tin{width:100%;padding:13px 14px;font-size:16px;border:1px solid var(--line);
+#tin, #tinTh{width:100%;padding:13px 14px;font-size:16px;border:1px solid var(--line);
   border-radius:11px;background:var(--card);color:var(--ink);outline:none;
-  font-family:inherit;resize:none;min-height:56px;line-height:1.5;margin-top:14px}
-#tin:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
-#tgo{width:100%;border:0;border-radius:11px;padding:14px;font-size:15px;font-weight:500;
-  cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;margin-top:9px}
-#tgo:disabled{opacity:.55;cursor:default}
+  font-family:inherit;resize:none;min-height:56px;line-height:1.5;margin-top:14px;
+  display:block;box-sizing:border-box}
+#tinTh{font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif}
+#tin:focus, #tinTh:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#tgo, #tgoTh{width:100%;border:0;border-radius:11px;padding:14px;font-size:15px;font-weight:500;
+  cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;margin-top:9px;
+  display:block;box-sizing:border-box;-webkit-appearance:none}
+#tgo:disabled, #tgoTh:disabled{opacity:.55;cursor:default}
 .tres{background:var(--card);border:1px solid var(--line);border-radius:12px;
   padding:20px 16px;margin-top:14px;text-align:center}
 .tsrc{font-size:13px;color:var(--muted)}
@@ -1424,6 +1427,40 @@ function setRecUI(on, label){
   document.getElementById("miclbl").textContent = label;
 }
 
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+const isStandalone = window.matchMedia("(display-mode: standalone)").matches ||
+                     window.navigator.standalone === true;
+
+// 键盘听写兜底：系统输入法的麦克风按钮走的是另一条路，网页语音不通时它多半还能用
+const DICTATE_TIP = `<div class="twarn" style="margin-top:10px">
+  <b>还有一条路，多半能用：</b><br>
+  点下面的泰文输入框 → 用手机键盘上的 🎤 按钮（系统听写）→ 把键盘切到泰语 →
+  让对方对着说 → 出来的泰文点「翻成中文」。<br>
+  系统听写和网页语音是两套东西，这条路不受上面那个错误影响。
+  ${isIOS ? "（键盘上看不到泰语的话：设置 → 通用 → 键盘 → 添加新键盘 → ไทย）" : ""}
+</div>`;
+
+function errHTML(err){
+  let msg;
+  if(err === "service-not-allowed"){
+    msg = isIOS
+      ? `<b>系统听写服务没开。</b><br>
+         打开 <b>设置 → 通用 → 键盘 → 启用听写</b>，打开后回来重试。<br>
+         iPhone 上网页语音识别是借系统听写实现的，这项关掉就会报这个错。
+         ${isStandalone ? "<br><br>另外你现在是从主屏图标打开的，iOS 在这种模式下语音识别经常不工作——试试改用 Safari 直接打开网址。" : ""}`
+      : `<b>浏览器拒绝提供语音识别服务。</b><br>
+         常见原因：用的是 Firefox 或隐私模式，或系统语音服务被关闭。
+         换 Chrome / Edge 的普通窗口试试。`;
+  }
+  else if(err === "not-allowed") msg = "<b>麦克风权限被拒绝了。</b><br>点地址栏左边的图标，把麦克风改成「允许」，然后刷新页面。";
+  else if(err === "no-speech")   msg = "没听到声音。音量调大一点、靠近麦克风再试。";
+  else if(err === "network")     msg = "语音识别需要联网，现在连不上。";
+  else if(err === "audio-capture") msg = "找不到麦克风，检查一下设备和系统权限。";
+  else msg = "识别出错：" + esc(err);
+  return `<div class="tres"><div class="twarn">${msg}</div>${DICTATE_TIP}</div>`;
+}
+
 // 正常收尾：stop 会保留已识别的内容并触发 onend；abort 会直接丢弃
 function finishRec(){
   clearTimeout(recTimer); recTimer = null;
@@ -1434,8 +1471,9 @@ function finishRec(){
 function startRec(){
   if(!SR){
     document.getElementById("tout").innerHTML = `<div class="tres">
-      <div class="twarn">这个浏览器不支持语音识别。Chrome、Edge 和较新的 iOS Safari 可以；
-        Firefox 不行。也可以直接把泰文粘贴到下面的框里翻译。</div></div>`;
+      <div class="twarn"><b>这个浏览器不支持网页语音识别。</b><br>
+        Chrome、Edge 和较新的 iOS Safari 可以，Firefox 不行。</div>${DICTATE_TIP}</div>`;
+    document.getElementById("tinTh").focus({preventScroll:true});
     return;
   }
   if(recording){ finishRec(); return; }   // 再点一下 = 停止
@@ -1462,14 +1500,10 @@ function startRec(){
     const err = ev.error;
     killRec();
     if(err === "aborted") return;
-    const msg = err === "not-allowed"
-      ? "麦克风权限被拒绝了。到浏览器设置里允许本站使用麦克风再试。"
-      : err === "no-speech" ? "没听到声音。手机音量调大一点、靠近电脑麦克风再试。"
-      : err === "network" ? "语音识别需要联网，现在连不上。"
-      : err === "audio-capture" ? "找不到麦克风，检查一下设备和系统权限。"
-      : "识别出错：" + err;
-    document.getElementById("tout").innerHTML =
-      `<div class="tres"><div class="twarn">${esc(msg)}</div></div>`;
+    document.getElementById("tout").innerHTML = errHTML(err);
+    if(err === "service-not-allowed" || err === "not-allowed"){
+      document.getElementById("tinTh").focus({preventScroll:true});
+    }
   };
   rec.onend = () => {
     const t = (finalText || document.getElementById("heard").textContent || "").trim();
