@@ -1,6 +1,6 @@
 /* 泰语口语速查 — 离线缓存
    装到主屏后没网也能开。改了 index.html 就把 CACHE 版本号 +1，旧缓存会自动清掉。 */
-const CACHE = "thai-trainer-v6";
+const CACHE = "thai-trainer-v11";
 const SHELL = ["./", "./index.html"];
 
 self.addEventListener("install", e => {
@@ -21,6 +21,8 @@ self.addEventListener("activate", e => {
 
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET") return;
+  // 翻译 API 等跨域请求不缓存，否则会一直返回第一次的结果
+  if (new URL(e.request.url).origin !== self.location.origin) return;
   e.respondWith(
     caches.match(e.request, { ignoreSearch: true }).then(hit => {
       if (hit) return hit;

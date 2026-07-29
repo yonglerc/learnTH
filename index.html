@@ -132,6 +132,55 @@ input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--acc
   cursor:pointer;color:var(--muted);font-family:inherit}
 .qmode button.on{background:var(--ink);color:var(--bg)}
 
+#trans{display:none}
+#trans.show{display:block}
+#tin{width:100%;padding:13px 14px;font-size:16px;border:1px solid var(--line);
+  border-radius:11px;background:var(--card);color:var(--ink);outline:none;
+  font-family:inherit;resize:none;min-height:56px;line-height:1.5;margin-top:14px}
+#tin:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+#tgo{width:100%;border:0;border-radius:11px;padding:14px;font-size:15px;font-weight:500;
+  cursor:pointer;background:var(--accent);color:#fff;font-family:inherit;margin-top:9px}
+#tgo:disabled{opacity:.55;cursor:default}
+.tres{background:var(--card);border:1px solid var(--line);border-radius:12px;
+  padding:20px 16px;margin-top:14px;text-align:center}
+.tsrc{font-size:13px;color:var(--muted)}
+.tbadge{display:inline-block;font-size:10.5px;letter-spacing:.04em;padding:2px 8px;
+  border-radius:5px;margin-top:8px}
+.tbadge.local{background:#f1f7f3;color:var(--green);border:1px solid #cfe3d7}
+.tbadge.net{background:#fdf6e8;color:#7a5c18;border:1px solid #ecd9ae}
+.tthai{font-size:34px;line-height:1.35;margin:14px 0 6px;color:var(--ink);
+  font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif;word-break:break-word}
+.trom{font-size:19px;font-weight:600}
+.ttone{font-size:14px;color:var(--gold);margin-top:4px}
+.twarn{font-size:12.5px;color:var(--muted);background:var(--bg);border-radius:7px;
+  padding:8px 10px;margin-top:12px;text-align:left;line-height:1.5}
+.trow{display:flex;gap:8px;margin-top:14px}
+.trow button{flex:1;border:1px solid var(--line);background:var(--bg);color:var(--ink);
+  border-radius:9px;padding:11px 6px;font-size:13.5px;cursor:pointer;font-family:inherit}
+.trow button.solid{background:var(--accent);color:#fff;border-color:var(--accent)}
+.tnear{margin-top:18px}
+.tnear h4{font-size:12px;color:var(--muted);font-weight:400;margin:0 0 8px}
+
+.dir{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;
+  background:var(--card);margin-top:14px}
+.dir button{flex:1;border:0;background:transparent;padding:11px 8px;font-size:13.5px;
+  cursor:pointer;color:var(--muted);font-family:inherit}
+.dir button.on{background:var(--ink);color:var(--bg)}
+.mic{width:100%;border:1px solid var(--line);background:var(--card);border-radius:12px;
+  padding:22px 14px;margin-top:12px;cursor:pointer;font-family:inherit;color:var(--ink);
+  display:flex;flex-direction:column;align-items:center;gap:9px}
+.mic .dot{width:62px;height:62px;border-radius:50%;background:var(--accent);color:#fff;
+  display:flex;align-items:center;justify-content:center;font-size:26px;flex:none}
+.mic .lbl{font-size:13.5px;color:var(--muted)}
+.mic.rec .dot{animation:pulse 1.2s ease-in-out infinite}
+.mic.rec .lbl{color:var(--accent)}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.12);opacity:.75}}
+.heard{font-size:15px;color:var(--muted);margin-top:10px;min-height:20px;text-align:center;
+  font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif}
+.tzh{font-size:30px;font-weight:600;line-height:1.35;margin:12px 0 8px;color:var(--ink)}
+.tth-small{font-size:17px;font-family:"Noto Sans Thai","Thonburi","Leelawadee UI",sans-serif;
+  color:var(--ink)}
+
 #top{position:fixed;right:16px;bottom:calc(18px + env(safe-area-inset-bottom));
   width:46px;height:46px;border-radius:50%;border:1px solid var(--line);
   background:var(--card);color:var(--ink);font-size:19px;line-height:1;cursor:pointer;
@@ -215,7 +264,29 @@ table.tones tr.hl td{background:var(--accent-soft)}
 
 <div class="modes">
   <button id="mQ" class="on">速查</button>
+  <button id="mT">翻译</button>
   <button id="mP">练习</button>
+</div>
+
+<div id="trans">
+  <div class="dir">
+    <button id="d2t" class="on">中 → 泰</button>
+    <button id="d2z">泰 → 中 · 听对方说</button>
+  </div>
+  <div id="paneZT">
+    <textarea id="tin" rows="2" placeholder="输入中文，翻成泰语并朗读…"></textarea>
+    <button id="tgo">翻译</button>
+  </div>
+  <div id="paneTZ" style="display:none">
+    <button class="mic" id="mic">
+      <span class="dot" id="micdot">●</span>
+      <span class="lbl" id="miclbl">点一下，让对方对着手机说泰语</span>
+    </button>
+    <div class="heard" id="heard"></div>
+    <textarea id="tinTh" rows="2" placeholder="或者直接粘贴泰文…" style="margin-top:4px"></textarea>
+    <button id="tgoTh">翻成中文</button>
+  </div>
+  <div id="tout"></div>
 </div>
 
 <div id="lookup">
@@ -314,7 +385,7 @@ const DICT = [
 {c:"学习",zh:"学校",r:"rong rian",t:"โรงเรียน",p:"roong riian",n:"两个音节都是中平调，整句平着走，一点起伏都没有。"},
 {c:"学习",zh:"我去学校",r:"{i} pai rong rian",t:"{I}ไปโรงเรียน",p:"{i} bpai roong riian"},
 {c:"学习",zh:"大学",r:"mahalai",t:"มหาลัย",p:"má-hǎa-lai",n:"正式写法是 มหาวิทยาลัย（má-hǎa-wít-thá-yaa-lai），五个音节，口语基本都缩成 mahalai。"},
-{c:"学习",zh:"教室",r:"hong rian",t:"ห้องเรียน",p:"hɔ̂ng riian"},
+{c:"学习",zh:"教室",r:"hong rian",t:"ห้องเรียน",p:"hɔ̂ɔng riian"},
 {c:"学习",zh:"去上课 / 去学习",r:"pai rian",t:"ไปเรียน",p:"bpai riian"},
 {c:"学习",zh:"学 / 念书",r:"rian",t:"เรียน",p:"riian"},
 {c:"学习",zh:"作业 / 功课",r:"kan ban",t:"การบ้าน",p:"gaan bâan"},
@@ -350,9 +421,9 @@ const DICT = [
 {c:"词根",zh:"大家 / 每个人",r:"thuk khon",t:"ทุกคน",p:"thúk khon"},
 
 // ——— 词根 · hong 房间 ———
-{c:"词根",zh:"房间",r:"hong",t:"ห้อง",p:"hɔ̂ng",n:"【词根】hɔ̂ng ห้อง = 房间。"},
-{c:"词根",zh:"卧室",r:"hong non",t:"ห้องนอน",p:"hɔ̂ng nɔɔn",n:"nɔɔn นอน = 躺、睡。"},
-{c:"词根",zh:"厨房",r:"hong khrua",t:"ห้องครัว",p:"hɔ̂ng khrua"},
+{c:"词根",zh:"房间",r:"hong",t:"ห้อง",p:"hɔ̂ɔng",n:"【词根】hɔ̂ɔng ห้อง = 房间。"},
+{c:"词根",zh:"卧室",r:"hong non",t:"ห้องนอน",p:"hɔ̂ɔng nɔɔn",n:"nɔɔn นอน = 躺、睡。"},
+{c:"词根",zh:"厨房",r:"hong khrua",t:"ห้องครัว",p:"hɔ̂ɔng khrua"},
 
 // ——— 吃喝 ———
 {c:"吃喝",zh:"很好吃",r:"aroi mak",t:"อร่อยมาก",p:"à-rɔ̀i mâak"},
@@ -387,7 +458,7 @@ const DICT = [
 
 // ——— 出行 ———
 {c:"出行",zh:"在哪里",r:"yu thi nai",t:"อยู่ที่ไหน",p:"yùu thîi nǎi"},
-{c:"出行",zh:"厕所在哪里",r:"hong nam yu thi nai",t:"ห้องน้ำอยู่ที่ไหน",p:"hɔ̂ng náam yùu thîi nǎi"},
+{c:"出行",zh:"厕所在哪里",r:"hong nam yu thi nai",t:"ห้องน้ำอยู่ที่ไหน",p:"hɔ̂ɔng náam yùu thîi nǎi"},
 {c:"出行",zh:"去…怎么走",r:"pai … yang ngai",t:"ไป…ยังไง",p:"bpai … yang ngai"},
 {c:"出行",zh:"远吗",r:"klai mai",t:"ไกลไหม",p:"glai mǎi",n:"⚠️ 陷阱：ไกล glai(平调)=远，ใกล้ glâi(降调)=近。写罗马拼音一模一样，全靠声调分。"},
 {c:"出行",zh:"近",r:"klai",t:"ใกล้",p:"glâi",n:"见上条。这个是降调，「远」是平调。"},
@@ -974,6 +1045,501 @@ document.getElementById("nI").onclick = () => {
 
 render();
 
+/* ===== 泰文 → 罗马拼音 自动转写（详见 translit.js） ===== */
+const romanize = (function(){
+/* 泰文 → 罗马拼音 自动转写
+   按泰文书写顺序解析：前置元音 → 首辅音 → 调号 → 上下元音 → 尾辅音
+   声调由「辅音等级 + 音节死活 + 元音长短 + 调号」推出。 */
+
+// 辅音：[首音, 尾音, 等级]
+const CONS = {
+  "ก":["g","k","m"],  "ข":["kh","k","h"], "ฃ":["kh","k","h"],
+  "ค":["kh","k","l"], "ฅ":["kh","k","l"], "ฆ":["kh","k","l"],
+  "ง":["ng","ng","l"],"จ":["j","t","m"],  "ฉ":["ch","","h"],
+  "ช":["ch","t","l"], "ซ":["s","t","l"],  "ฌ":["ch","","l"],
+  "ญ":["y","n","l"],  "ฎ":["d","t","m"],  "ฏ":["dt","t","m"],
+  "ฐ":["th","t","h"], "ฑ":["th","t","l"], "ฒ":["th","t","l"],
+  "ณ":["n","n","l"],  "ด":["d","t","m"],  "ต":["dt","t","m"],
+  "ถ":["th","t","h"], "ท":["th","t","l"], "ธ":["th","t","l"],
+  "น":["n","n","l"],  "บ":["b","p","m"],  "ป":["bp","p","m"],
+  "ผ":["ph","","h"],  "ฝ":["f","","h"],   "พ":["ph","p","l"],
+  "ฟ":["f","p","l"],  "ภ":["ph","p","l"], "ม":["m","m","l"],
+  "ย":["y","y","l"],  "ร":["r","n","l"],  "ล":["l","n","l"],
+  "ว":["w","w","l"],  "ศ":["s","t","h"],  "ษ":["s","t","h"],
+  "ส":["s","t","h"],  "ห":["h","","h"],   "ฬ":["l","n","l"],
+  "อ":["","","m"],    "ฮ":["h","","l"]
+};
+const TONE_MARK = {"่":1,"้":2,"๊":3,"๋":4};
+const LEADV = "เแโใไ";                       // เ แ โ ใ ไ
+const ABOVE = "ัิีึืุู็";     // ั ิ ี ึ ื ุ ู ็
+const SARA_A = "ะ", SARA_AA = "า", SARA_AM = "ำ";      // ะ า ำ
+const O_ANG = "อ", WO = "ว", YO = "ย", SILENT = "์";
+const isC = c => !!CONS[c];
+const isTM = c => TONE_MARK[c] !== undefined;
+
+const CLUSTERS = ["กร","กล","กว","ขร","ขล","ขว","คร","คล","คว","ตร",
+                  "ปร","ปล","ผล","พร","พล","บร","ดร","ฟร","ฟล","ทร"];
+const LEAD_H = ["หง","หญ","หน","หม","หย","หร","หล","หว"];
+const LEAD_O = ["อย"];
+
+function readInitial(w, i, hasLead){
+  const two = w.substr(i,2);
+  if(LEAD_H.indexOf(two) >= 0) return {rom:CONS[two[1]][0], cls:"h", len:2};
+  if(LEAD_O.indexOf(two) >= 0) return {rom:CONS[two[1]][0], cls:"m", len:2};
+  // 辅音丛 vs「首辅音 + 尾辅音」：
+  //   有前置元音（เกรง）或后面紧跟元音符号（ครับ）→ 是辅音丛
+  //   否则（ละคร / นคร）第二个字是尾辅音，不是辅音丛
+  const nx = w[i+2];
+  const clusterOK = hasLead || (nx !== undefined && LEADV.indexOf(nx) < 0);
+  if(CLUSTERS.indexOf(two) >= 0 && clusterOK) return {rom:CONS[two[0]][0]+CONS[two[1]][0], cls:CONS[two[0]][2], len:2};
+  if(isC(w[i])) return {rom:CONS[w[i]][0], cls:CONS[w[i]][2], len:1};
+  return null;
+}
+
+const MARKS = ["", "̀", "", "̂", "́", "̌"]; // 0中 1低 3降 4高 5升
+const VOWCH = "aeiouɔɛɯə";
+
+function toneOf(cls, dead, lng, mark){
+  if(!mark){
+    if(dead) return cls === "l" ? (lng ? 3 : 4) : 1;
+    return cls === "h" ? 5 : 0;
+  }
+  if(mark === 1) return cls === "l" ? 3 : 1;
+  if(mark === 2) return cls === "l" ? 4 : 3;
+  if(mark === 3) return 4;
+  return 5;
+}
+function applyTone(s, t){
+  if(!t) return s;
+  for(let i = 0; i < s.length; i++)
+    if(VOWCH.indexOf(s[i]) >= 0)
+      return (s.slice(0,i+1) + MARKS[t] + s.slice(i+1)).normalize("NFC");
+  return s;
+}
+
+// 位置 j 是否开启新音节 —— 用来判断辅音是尾音还是下一个音节的首音
+function startsNew(w, j){
+  if(j >= w.length) return false;
+  if(LEADV.indexOf(w[j]) >= 0) return true;
+  if(!isC(w[j])) return false;
+  const k = w[j+1];
+  if(k === undefined) return false;
+  if(isTM(k)) return true;                       // 带调号 = 自己是一个音节
+  if(k === SILENT) return false;                 // 静音符，不算
+  if(ABOVE.indexOf(k) >= 0 || k === SARA_A || k === SARA_AA || k === SARA_AM) return true;
+  if(CLUSTERS.indexOf(w[j] + k) >= 0){        // กล + 元音 → 是下一个音节的辅音丛
+    const k2 = w[j+2];
+    if(k2 !== undefined && (ABOVE.indexOf(k2) >= 0 || k2 === SARA_A
+       || k2 === SARA_AA || k2 === SARA_AM || isTM(k2))) return true;
+  }
+  return false;
+}
+
+function parseSyllable(w, i){
+  const start = i;
+  let lead = "";
+  if(LEADV.indexOf(w[i]) >= 0){ lead = w[i]; i++; }
+
+  const pre = "";
+
+  const ini = readInitial(w, i, !!lead);
+  if(!ini) return null;
+  i += ini.len;
+
+  let mark = 0;
+  if(isTM(w[i])){ mark = TONE_MARK[w[i]]; i++; }
+
+  let above = "";
+  while(i < w.length && ABOVE.indexOf(w[i]) >= 0){ above += w[i]; i++; }
+  if(isTM(w[i])){ mark = TONE_MARK[w[i]]; i++; }
+
+  const peek = o => w[i + (o || 0)];
+  let vow, lng = 0, noFin = false;
+
+  if(lead === "ไ" || lead === "ใ"){ vow = "ai"; lng = 1; noFin = true; if(peek() === YO) i++; }
+  else if(lead === "เ"){                                   // เ
+    if(above === "ี" && peek() === YO){ vow="ia"; lng=1; i++; }
+    else if(above === "ื" && peek() === O_ANG){ vow="ɯa"; lng=1; i++; }
+    else if(peek() === SARA_AA && peek(1) === SARA_A){ vow="ɔ"; lng=0; i+=2; noFin=true; }
+    else if(peek() === SARA_AA){ vow="ao"; lng=1; i++; noFin=true; }
+    else if(peek() === YO && !isC(peek(1)) && above === ""){ vow="əəi"; lng=1; i++; noFin=true; }
+    else if(peek() === O_ANG && peek(1) === SARA_A){ vow="ə"; lng=0; i+=2; noFin=true; }
+    else if(peek() === O_ANG){ vow="əə"; lng=1; i++; }
+    else if(peek() === SARA_A){ vow="e"; lng=0; i++; noFin=true; }
+    else if(above === "็"){ vow="e"; lng=0; }
+    else if(above === "ิ"){ vow="əə"; lng=1; }
+    else { vow="ee"; lng=1; }
+  }
+  else if(lead === "แ"){                                   // แ
+    if(peek() === SARA_A){ vow="ɛ"; lng=0; i++; noFin=true; }
+    else if(above === "็"){ vow="ɛ"; lng=0; }
+    else { vow="ɛɛ"; lng=1; }
+  }
+  else if(lead === "โ"){                                   // โ
+    if(peek() === SARA_A){ vow="o"; lng=0; i++; noFin=true; }
+    else { vow="oo"; lng=1; }
+  }
+  else if(above === "ั"){                                  // ั
+    if(peek() === WO){ vow="ua"; lng=1; i++; }
+    else { vow="a"; lng=0; }
+  }
+  else if(above === "ิ"){ vow="i";  lng=0; }
+  else if(above === "ี"){ vow="ii"; lng=1; }
+  else if(above === "ึ"){ vow="ɯ";  lng=0; }
+  else if(above === "ื"){ vow="ɯɯ"; lng=1; if(peek()===O_ANG) i++; }
+  else if(above === "ุ"){ vow="u";  lng=0; }
+  else if(above === "ู"){ vow="uu"; lng=1; }
+  else if(above === "็"){ vow="o";  lng=0; }
+  else if(peek() === SARA_AM){ vow="am"; lng=1; i++; noFin=true; }
+  else if(peek() === SARA_AA){ vow="aa"; lng=1; i++; }
+  else if(peek() === SARA_A){  vow="a";  lng=0; i++; noFin=true; }
+  else if(peek() === O_ANG){   vow="ɔɔ"; lng=1; i++; }
+  else if(peek() === WO && isC(peek(1)) && !startsNew(w, i+1)){ vow="ua"; lng=1; i++; }
+  else if(isC(peek()) && isC(peek(1)) && !startsNew(w, i) && !startsNew(w, i+1)){ vow="a"; lng=0; noFin=true; }
+  else if(peek() === "ร" && !startsNew(w, i)){ vow="ɔɔ"; lng=1; }
+  else if(isC(peek()) && !startsNew(w, i)){ vow="o"; lng=0; }   // 闭音节隐含 o
+  else { vow="a"; lng=0; }                                      // 前导音节隐含 a
+  if(isTM(w[i])){ mark = TONE_MARK[w[i]]; i++; }
+
+  let fin = "";
+  if(!noFin && isC(w[i]) && CONS[w[i]][1] && !startsNew(w, i)){
+    if(w[i+1] === SILENT) i += 2;
+    else {
+      fin = (w[i] === WO) ? (/i$/.test(vow) ? "u" : "o")
+          : (w[i] === YO) ? "i" : CONS[w[i]][1];
+      i++;
+    }
+  }
+  const tail = w.slice(i).match(/^[ก-ฮ]{1,2}์/);
+  if(tail) i += tail[0].length;
+  while(w[i] === SILENT) i++;
+
+  const dead = fin ? ("p t k".indexOf(fin) >= 0 && fin.length === 1) : !lng;
+  const syl = pre + applyTone(ini.rom + vow + fin, toneOf(ini.cls, dead, lng, mark));
+  return {syl, next: Math.max(i, start + 1)};
+}
+
+function romWord(w){
+  const out = [];
+  let i = 0, guard = 0;
+  while(i < w.length && guard++ < 100){
+    if(w[i] === "ๆ"){ if(out.length) out.push(out[out.length-1]); i++; continue; }
+    const r = parseSyllable(w, i);
+    if(!r){ i++; continue; }
+    if(r.syl) out.push(r.syl);
+    i = r.next;
+  }
+  return out.join("-");
+}
+
+// 拼写规则推不出来的不规则词，直接查表
+const IRREG = {
+  "น้ำ":"náam", "เป็น":"bpen", "ก็":"gɔ̂ɔ", "ได้":"dâai", "ไม่":"mâi",
+  "อร่อย":"à-rɔ̀i", "เขา":"khǎo", "เค้า":"kháo", "ใคร":"khrai",
+  "ไหน":"nǎi", "ไหม":"mǎi", "อยู่":"yùu", "อย่า":"yàa",
+  "อย่าง":"yàang", "อยาก":"yàak", "ท่าน":"thâan", "เธอ":"thəə",
+  "แสดง":"sà-dɛɛng", "จริง":"jing", "ภูมิ":"phuum", "เล่น":"lên",
+  "พฤษภา":"phrɯ́t-sà-phaa", "พฤศจิกา":"phrɯ́t-sà-jì-gaa", "พฤหัส":"phá-rɯ́-hàt",
+  "มกรา":"má-gà-raa", "กรกฎา":"gà-rá-gà-daa", "ปกติ":"bpòk-gà-dtì",
+  "เก้า":"gâao", "เปล่า":"bplàao", "หน่อย":"nɔ̀i", "เขียว":"khǐao",
+  "เสร็จ":"sèt", "บัตร":"bàt", "ชมพู":"chom-phuu", "เงิน":"ngən",
+  "สามารถ":"sǎa-mâat", "ประ":"bprà", "ปรารถนา":"bpràat-thà-nǎa"
+};
+const IRREG_KEYS = Object.keys(IRREG).sort((a,b) => b.length - a.length);
+function romWordOrIrreg(w){
+  const out = [];
+  let i = 0, buf = "";
+  const flush = () => { if(buf){ out.push(romWord(buf)); buf = ""; } };
+  while(i < w.length){
+    let hit = null;
+    for(const k of IRREG_KEYS)
+      if(w.substr(i, k.length) === k){ hit = k; break; }
+    if(hit){
+      flush();
+      // น้ำ 单独念 náam，跟别的词组合时缩读成 nám
+      const NAM_SHORT = ["น้ำตา","น้ำตาล","น้ำมัน","น้ำหนัก","น้ำใจ"];
+      out.push(hit === "น้ำ" && NAM_SHORT.some(x => w.indexOf(x) === i) ? "nám" : IRREG[hit]);
+      i += hit.length;
+    } else { buf += w[i]; i++; }
+  }
+  flush();
+  return out.filter(Boolean).join("-");
+}
+
+function romanize(text){
+  if(!text) return "";
+  return text.split(/([^฀-๿]+)/)
+             .map(p => /[฀-๿]/.test(p) ? romWordOrIrreg(p) : p)
+             .join("").replace(/\s+/g, " ").trim();
+}
+
+
+
+  return romanize;
+})();
+
+/* ================= 即时翻译 =================
+   分两层：先查本地词库（离线、有声调、最准），
+   查不到再走免费 API（要联网、无声调、机翻质量）。       */
+let lastTrans = null;
+
+// 两边都去掉尾部标点和括号补充，不然「怎么样？」匹配不上「怎么样」
+const norm = t => (t||"").toLowerCase().trim()
+  .replace(/[（(][^)）]*[)）]/g,"").replace(/[?？。.!！,，、\s]+/g,"").trim();
+
+function localHit(q){
+  const s = norm(q);
+  if(!s) return null;
+  const all = ALL();
+  return all.find(e => norm(e.zh) === s)
+      || all.find(e => norm(e.r) === s || norm(e.p) === s)
+      || all.find(e => norm(e.zh).split("/").some(x => x && x === s))
+      || null;
+}
+function nearHits(q, n){
+  const s = q.trim().toLowerCase();
+  if(!s) return [];
+  return ALL().filter(e =>
+    e.zh.toLowerCase().includes(s) || s.includes(e.zh.toLowerCase()) ||
+    plain(e.r).includes(s)).slice(0, n);
+}
+
+function tRender(html){ document.getElementById("tout").innerHTML = html; }
+
+function tResult(o){
+  lastTrans = o;
+  const near = nearHits(o.src, 3).filter(e => e.t !== o.thai);
+  tRender(`<div class="tres">
+    <div class="tsrc">${esc(o.src)}</div>
+    <div><span class="tbadge ${o.local ? "local" : "net"}">${
+      o.local ? "来自词库 · 人工核对" : "在线翻译 · 拼音自动转写"}</span></div>
+    <div class="tthai">${esc(o.thai)}</div>
+    ${o.rom  ? `<div class="trom">${esc(o.rom)}</div>` : ""}
+    ${o.tone ? `<div class="ttone">${esc(o.tone)}</div>` : ""}
+    ${o.local ? "" : `<div class="twarn">泰文来自机器翻译，拼音和声调是按拼读规则自动推算的
+      （实测约 97% 准确）。要紧场合建议直接把泰文给对方看，或按播放让手机念。</div>`}
+    <div class="trow">
+      <button class="solid" id="tplay">▶ 播放</button>
+      <button id="tcopy">复制泰文</button>
+      ${o.local ? "" : `<button id="tsave">存进词库</button>`}
+    </div>
+  </div>
+  ${near.length ? `<div class="tnear"><h4>词库里的相关说法</h4>${
+      near.map(e => cardHTML(e)).join("")}</div>` : ""}`);
+
+  document.getElementById("tplay").onclick = () => speak(o.thai);
+  document.getElementById("tcopy").onclick = () => {
+    navigator.clipboard?.writeText(o.thai)
+      .then(() => document.getElementById("tcopy").textContent = "✓ 已复制")
+      .catch(() => document.getElementById("tcopy").textContent = "复制失败");
+  };
+  const sv = document.getElementById("tsave");
+  if(sv) sv.onclick = () => {
+    addCustom({zh:o.src, r:o.rom || "", t:o.thai,
+               p:(o.tone ? romanize(o.thai) : ""),
+               n:"在线翻译，拼音为自动转写，可能有误。"});
+    sv.textContent = "✓ 已存"; sv.disabled = true;
+  };
+  document.querySelectorAll(".tnear .speak").forEach(b =>
+    b.onclick = () => speak(b.dataset.th, b));
+  setTimeout(() => speak(o.thai), 250);
+}
+
+/* ---------- 泰 → 中：语音识别 + 反向翻译 ---------- */
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recording = false, recTimer = null;
+
+// 彻底释放麦克风：abort 比 stop 更干脆，并解绑所有回调防止旧对象复活
+function killRec(){
+  clearTimeout(recTimer); recTimer = null;
+  if(rec){
+    rec.onresult = rec.onerror = rec.onend = rec.onaudioend = null;
+    try{ rec.abort(); }catch(e){}
+    try{ rec.stop();  }catch(e){}
+    rec = null;
+  }
+  if(recording) setRecUI(false, "点一下，让对方对着手机说泰语");
+  recording = false;
+}
+
+// 泰文反查词库：去掉句尾敬语再比对
+const stripPolite = t => (t||"").replace(/(ครับ|ค่ะ|คะ|ฮะ|จ้า|นะ|น่ะ)/g,"").replace(/\s+/g,"").trim();
+function localHitThai(th){
+  const s = stripPolite(th);
+  if(!s) return null;
+  return ALL().find(e => stripPolite(fill(e.t)) === s)
+      || ALL().find(e => { const x = stripPolite(fill(e.t));
+                           return x.length > 2 && (x === s || s === x); })
+      || null;
+}
+
+function tResultTh(o){
+  const auto = romanize(o.thai);
+  document.getElementById("tout").innerHTML = `<div class="tres">
+    <div><span class="tbadge ${o.local ? "local" : "net"}">${
+      o.local ? "词库命中 · 人工核对" : "在线翻译"}</span></div>
+    <div class="tzh">${esc(o.zh)}</div>
+    <div class="tth-small">${esc(o.thai)}</div>
+    <div class="ttone" style="margin-top:6px">${esc(toneText(o.tone || auto))}</div>
+    ${o.n ? `<div class="twarn">${esc(o.n)}</div>` : ""}
+    <div class="trow">
+      <button class="solid" id="tplay">▶ 重听泰语</button>
+      <button id="tagain">再录一次</button>
+    </div>
+  </div>`;
+  document.getElementById("tplay").onclick = () => speak(o.thai);
+  document.getElementById("tagain").onclick = startRec;
+}
+
+async function translateTh(th){
+  if(!th) return;
+  const hit = localHitThai(th);
+  if(hit){
+    tResultTh({zh:hit.zh, thai:fill(hit.t), tone:fill(hit.p,"tone"), n:hit.n, local:true});
+    return;
+  }
+  document.getElementById("tout").innerHTML =
+    `<div class="tres"><div class="tsrc" style="padding:14px 0">正在翻译…</div></div>`;
+  try{
+    const r = await fetch("https://api.mymemory.translated.net/get?langpair=th|zh-CN&q=" +
+                          encodeURIComponent(th));
+    const d = await r.json();
+    const zh = (d.responseData && d.responseData.translatedText || "").trim();
+    if(!zh || d.responseStatus !== 200) throw new Error("no result");
+    tResultTh({zh, thai:th, local:false});
+  }catch(e){
+    document.getElementById("tout").innerHTML = `<div class="tres">
+      <div class="tth-small">${esc(th)}</div>
+      <div class="ttone" style="margin-top:6px">${esc(toneText(romanize(th)))}</div>
+      <div class="twarn">听到了这句，但在线翻译没通（没网或额度用完）。
+        拼音是本地算的，可以先照着念或问 Claude。</div></div>`;
+  }
+}
+
+function setRecUI(on, label){
+  recording = on;
+  const m = document.getElementById("mic");
+  m.classList.toggle("rec", on);
+  document.getElementById("micdot").textContent = on ? "■" : "●";
+  document.getElementById("miclbl").textContent = label;
+}
+
+// 正常收尾：stop 会保留已识别的内容并触发 onend；abort 会直接丢弃
+function finishRec(){
+  clearTimeout(recTimer); recTimer = null;
+  setRecUI(false, "处理中…");
+  if(rec){ try{ rec.stop(); }catch(e){ killRec(); } }
+}
+
+function startRec(){
+  if(!SR){
+    document.getElementById("tout").innerHTML = `<div class="tres">
+      <div class="twarn">这个浏览器不支持语音识别。Chrome、Edge 和较新的 iOS Safari 可以；
+        Firefox 不行。也可以直接把泰文粘贴到下面的框里翻译。</div></div>`;
+    return;
+  }
+  if(recording){ finishRec(); return; }   // 再点一下 = 停止
+  killRec();                              // 保证同时只有一个识别会话
+  rec = new SR();
+  rec.lang = "th-TH";
+  rec.interimResults = true;
+  rec.continuous = false;
+  rec.maxAlternatives = 1;
+  let finalText = "";
+  document.getElementById("heard").textContent = "";
+  setRecUI(true, "正在听… 说完点一下停止");
+  // 最长录 20 秒，防止忘了停一直占着麦克风
+  recTimer = setTimeout(() => { if(recording) finishRec(); }, 20000);
+  rec.onresult = ev => {
+    let interim = "";
+    for(let i = ev.resultIndex; i < ev.results.length; i++){
+      const t = ev.results[i][0].transcript;
+      if(ev.results[i].isFinal) finalText += t; else interim += t;
+    }
+    document.getElementById("heard").textContent = finalText + interim;
+  };
+  rec.onerror = ev => {
+    const err = ev.error;
+    killRec();
+    if(err === "aborted") return;
+    const msg = err === "not-allowed"
+      ? "麦克风权限被拒绝了。到浏览器设置里允许本站使用麦克风再试。"
+      : err === "no-speech" ? "没听到声音。手机音量调大一点、靠近电脑麦克风再试。"
+      : err === "network" ? "语音识别需要联网，现在连不上。"
+      : err === "audio-capture" ? "找不到麦克风，检查一下设备和系统权限。"
+      : "识别出错：" + err;
+    document.getElementById("tout").innerHTML =
+      `<div class="tres"><div class="twarn">${esc(msg)}</div></div>`;
+  };
+  rec.onend = () => {
+    const t = (finalText || document.getElementById("heard").textContent || "").trim();
+    killRec();
+    if(t) translateTh(t);
+    else document.getElementById("tout").innerHTML =
+      `<div class="tres"><div class="twarn">没识别到内容。麦克风指示灯这时应该已经熄灭；
+        如果还亮着，刷新一下页面。</div></div>`;
+  };
+  try{ rec.start(); }
+  catch(e){ killRec(); }
+}
+
+// 离开页面 / 切到后台 / 切走模式时都要放开麦克风
+document.addEventListener("visibilitychange", () => { if(document.hidden) killRec(); });
+window.addEventListener("pagehide", killRec);
+window.addEventListener("beforeunload", killRec);
+
+async function doTranslate(){
+  const q = document.getElementById("tin").value.trim();
+  if(!q) return;
+  const btn = document.getElementById("tgo");
+
+  const hit = localHit(q);
+  if(hit){
+    tResult({src:q, thai:fill(hit.t), rom:fill(hit.r,"rom"),
+             tone:toneText(fill(hit.p,"tone")), local:true});
+    return;
+  }
+
+  if(!navigator.onLine){
+    const near = nearHits(q, 5);
+    tRender(`<div class="tres"><div class="tsrc">${esc(q)}</div>
+      <div class="tthai" style="font-size:17px;color:var(--muted)">词库里没有，现在也没网</div>
+      <div class="twarn">在线翻译需要联网。等有网了再试，或者先看看下面词库里相近的说法。</div></div>
+      ${near.length ? `<div class="tnear"><h4>相近的说法</h4>${
+        near.map(e => cardHTML(e)).join("")}</div>` : ""}`);
+    document.querySelectorAll(".tnear .speak").forEach(b =>
+      b.onclick = () => speak(b.dataset.th, b));
+    return;
+  }
+
+  btn.disabled = true; btn.textContent = "翻译中…";
+  tRender(`<div class="tres"><div class="tsrc" style="padding:14px 0">正在翻译「${esc(q)}」…</div></div>`);
+  try{
+    const url = "https://api.mymemory.translated.net/get?langpair=zh|th&q=" + encodeURIComponent(q);
+    const r = await fetch(url);
+    const d = await r.json();
+    const th = (d.responseData && d.responseData.translatedText || "").trim();
+    if(!th || d.responseStatus !== 200 || !/[฀-๿]/.test(th)) throw new Error(d.responseDetails || "no result");
+    const thai = th.replace(/^[-–—\s]+/,"");
+    const auto = romanize(thai);
+    tResult({src:q, thai, local:false, auto:true,
+             rom: auto.normalize("NFD").replace(/[̀-ͯ]/g,"").normalize("NFC"),
+             tone: toneText(auto)});
+  }catch(err){
+    const near = nearHits(q, 5);
+    tRender(`<div class="tres"><div class="tsrc">${esc(q)}</div>
+      <div class="tthai" style="font-size:17px;color:var(--muted)">翻译失败</div>
+      <div class="twarn">在线翻译暂时用不了（可能是当天免费额度用完，或网络不通）。
+        过一会再试，或者在聊天里问 Claude。</div></div>
+      ${near.length ? `<div class="tnear"><h4>词库里相近的说法</h4>${
+        near.map(e => cardHTML(e)).join("")}</div>` : ""}`);
+    document.querySelectorAll(".tnear .speak").forEach(b =>
+      b.onclick = () => speak(b.dataset.th, b));
+  }finally{
+    btn.disabled = false; btn.textContent = "翻译";
+  }
+}
+
 /* ================= 练习模式 =================
    每个词存熟练度 0-5：说对 +1，说错清零。
    抽题权重 = 6 - 熟练度，所以不会的反复出现，会了的慢慢淡出。   */
@@ -1167,20 +1733,47 @@ function pDone(){
   document.getElementById("pmore").onclick = () => {
     round = pickRound(ROUND_N); rIdx = 0; rRight = 0; pQuestion();
   };
-  document.getElementById("pback").onclick = () => setMode(false);
+  document.getElementById("pback").onclick = () => setMode("lookup");
 }
 
-function setMode(practice){
-  document.getElementById("lookup").style.display  = practice ? "none" : "";
-  document.getElementById("practice").className    = practice ? "show" : "";
-  document.getElementById("mP").classList.toggle("on", practice);
-  document.getElementById("mQ").classList.toggle("on", !practice);
-  if(practice) pStart();
+function setMode(m){
+  if(m !== "trans") killRec();
+  document.getElementById("lookup").style.display = (m === "lookup") ? "" : "none";
+  document.getElementById("trans").className      = (m === "trans")    ? "show" : "";
+  document.getElementById("practice").className   = (m === "practice") ? "show" : "";
+  document.getElementById("mQ").classList.toggle("on", m === "lookup");
+  document.getElementById("mT").classList.toggle("on", m === "trans");
+  document.getElementById("mP").classList.toggle("on", m === "practice");
+  if(m === "practice") pStart();
+  if(m === "trans") document.getElementById("tin").focus({preventScroll:true});
   window.scrollTo(0,0);
 }
 loadSRS();
-document.getElementById("mQ").onclick = () => setMode(false);
-document.getElementById("mP").onclick = () => setMode(true);
+document.getElementById("mQ").onclick = () => setMode("lookup");
+document.getElementById("mT").onclick = () => setMode("trans");
+document.getElementById("mP").onclick = () => setMode("practice");
+document.getElementById("tgo").onclick = doTranslate;
+document.getElementById("tin").addEventListener("keydown", ev => {
+  if(ev.key === "Enter" && !ev.shiftKey){ ev.preventDefault(); doTranslate(); }
+});
+function setDir(toThai){
+  document.getElementById("paneZT").style.display = toThai ? "" : "none";
+  document.getElementById("paneTZ").style.display = toThai ? "none" : "";
+  document.getElementById("d2t").classList.toggle("on", toThai);
+  document.getElementById("d2z").classList.toggle("on", !toThai);
+  document.getElementById("tout").innerHTML = "";
+  killRec();
+}
+document.getElementById("d2t").onclick = () => setDir(true);
+document.getElementById("d2z").onclick = () => setDir(false);
+document.getElementById("mic").onclick = startRec;
+document.getElementById("tgoTh").onclick = () =>
+  translateTh(document.getElementById("tinTh").value.trim());
+document.getElementById("tinTh").addEventListener("keydown", ev => {
+  if(ev.key === "Enter" && !ev.shiftKey){
+    ev.preventDefault(); translateTh(ev.target.value.trim());
+  }
+});
 
 // 回到顶部：滑下去一屏才出现，兼容 window / 容器两种滚动
 (function(){
