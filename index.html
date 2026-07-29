@@ -299,11 +299,20 @@ table.tones tr.hl td{background:var(--accent-soft)}
       <div class="steps">
         <b>让对方说泰语 · 用键盘听写</b>
         <ol>
-          <li>点下面的输入框，键盘弹出来</li>
-          <li>按键盘上的 <b>🎤</b>，把语言切到 <b>ไทย</b></li>
-          <li>让对方对着手机说，说完收起键盘</li>
-          <li>点「翻成中文」</li>
+          <li>点下面的输入框，调出键盘</li>
+          <li>按 <b>🌐</b> 地球键切到<b>泰文键盘</b>（字母变成泰文）</li>
+          <li><b>然后</b>再按 <b>🎤</b> —— 听写语言跟着键盘走</li>
+          <li>让对方对着手机说，说完点「翻成中文」</li>
         </ol>
+        <button class="altlink" id="nokb" style="text-align:left;text-decoration:none;
+          color:var(--muted);padding-top:10px">键盘上没有泰文？点这里看怎么加 ▸</button>
+        <div id="kbhelp" style="display:none;font-size:13px;color:var(--muted);
+          line-height:1.75;margin-top:8px;border-top:1px solid var(--line);padding-top:10px">
+          设置 → 通用 → 键盘 → 键盘 → <b>添加新键盘</b> → 找 <b>ไทย / Thai</b> → 添加。<br>
+          再回到 设置 → 通用 → 键盘，确认 <b>启用听写</b> 是开的。<br>
+          <span style="color:var(--green)">麦克风的语言列表只会显示你装了键盘的语言，
+          所以必须先加泰文键盘。</span>
+        </div>
       </div>
     </div>
     <textarea id="tinTh" rows="2" placeholder="泰文出现在这里…"></textarea>
@@ -1839,6 +1848,14 @@ function useDictationFirst(on){
     : "";
   const b = document.getElementById("trymic");
   if(b) b.onclick = () => { useDictationFirst(false); startRec(); };
+  const k = document.getElementById("nokb");
+  if(k) k.onclick = () => {
+    const h = document.getElementById("kbhelp");
+    const open = h.style.display !== "none";
+    h.style.display = open ? "none" : "block";
+    k.textContent = open ? "键盘上没有泰文？点这里看怎么加 ▸"
+                         : "键盘上没有泰文？点这里看怎么加 ▾";
+  };
 }
 if(isIOS) useDictationFirst(true);
 document.getElementById("tinTh").addEventListener("keydown", ev => {
